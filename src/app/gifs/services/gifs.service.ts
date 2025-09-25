@@ -35,6 +35,8 @@ export class GifService {
     trendingGifsLoading = signal(false);
     searchGifsLoading = signal(false);
 
+    private trendingPage = signal(0);
+
     trendingGifGroup = computed<Gif[][]>(() => {
         const gropus = [];
         for (let i = 0; i < this.trendingGifs().length; i += 3) {
@@ -55,14 +57,17 @@ export class GifService {
     });
 
     loadTrendingGifs() {
+        if(this.trendingGifsLoading()) return;
         this.trendingGifsLoading.set(true);
         this.http.get<GiphyResponse>(`${environment.giphyApiUrl}/gifs/trending`,{
         params: {
             api_key: environment.giphyApiKey,
             limit: 20,
+            offset: this.trendingPage() * 20,
         }}).subscribe((response) => {
             const gifs = GifMapper.mapGiphyItemsToGifArray(response.data);
-            this.trendingGifs.set(gifs);
+            this.trendingGifs.update(prev => [...prev, ...gifs]);
+            this.trendingPage.update(prev => prev + 1);
             this.trendingGifsLoading.set(false);
         });
     }
